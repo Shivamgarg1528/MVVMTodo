@@ -1,13 +1,17 @@
 package com.codinginflow.mvvmtodo.ui
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.View
+import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.codinginflow.mvvmtodo.R
 import com.codinginflow.mvvmtodo.data.adapter.TaskAdapter
 import com.codinginflow.mvvmtodo.databinding.FragmentTaskListBinding
+import com.codinginflow.mvvmtodo.util.onQueryTextChanged
 import com.codinginflow.mvvmtodo.vm.TaskListViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -39,6 +43,18 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list) {
         //1-
         mTaskListViewModel.mTask.observe(viewLifecycleOwner) {
             mAdapter.submitList(it)
+        }
+
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        inflater.inflate(R.menu.task_list_menu, menu)
+
+        val searchView = menu.findItem(R.id.search).actionView as SearchView
+        searchView.onQueryTextChanged {
+            mTaskListViewModel.mQueryAsFlow.value = it
         }
     }
 
