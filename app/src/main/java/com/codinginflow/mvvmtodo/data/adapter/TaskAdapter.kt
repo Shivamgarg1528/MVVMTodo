@@ -9,11 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.databinding.RowTaskBinding
 
-class TaskAdapter : ListAdapter<Task, TaskAdapter.ViewHolder>(DiffCallback) {
+class TaskAdapter(private var listener: OnItemClickListener) : ListAdapter<Task, TaskAdapter.ViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskAdapter.ViewHolder {
         return ViewHolder(
-            binding = RowTaskBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                binding = RowTaskBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         )
     }
 
@@ -22,7 +22,26 @@ class TaskAdapter : ListAdapter<Task, TaskAdapter.ViewHolder>(DiffCallback) {
     }
 
     inner class ViewHolder(private val binding: RowTaskBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+            RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.apply {
+                root.setOnClickListener {
+                    val position = adapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        val task = getItem(position)
+                        listener.onItemClick(task)
+                    }
+                }
+                checkBoxCompleted.setOnClickListener {
+                    val position = adapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        val task = getItem(position)
+                        listener.onCheckBoxClick(task, checkBoxCompleted.isChecked)
+                    }
+                }
+            }
+        }
+
         fun bind(task: Task) {
             binding.apply {
                 checkBoxCompleted.isChecked = task.completed
@@ -42,5 +61,10 @@ class TaskAdapter : ListAdapter<Task, TaskAdapter.ViewHolder>(DiffCallback) {
         override fun areContentsTheSame(oldItem: Task, newItem: Task): Boolean {
             return oldItem == newItem
         }
+    }
+
+    interface OnItemClickListener {
+        fun onItemClick(task: Task)
+        fun onCheckBoxClick(task: Task, isChecked: Boolean)
     }
 }

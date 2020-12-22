@@ -23,16 +23,14 @@ abstract class TaskDatabase : RoomDatabase() {
             super.onCreate(db)
             scope.launch {
                 provider.get().getTaskDao().apply {
-                    insertTask(Task("Task-1"))
-                    insertTask(Task("Task-2"))
-                    insertTask(Task("Task-3"))
-                    insertTask(Task("Task-4"))
-                    insertTask(Task("Task-5"))
-                    insertTask(Task("Task-6"))
-                    insertTask(Task("Task-7"))
-                    insertTask(Task("Task-8"))
-                    insertTask(Task("Task-9"))
-                    insertTask(Task("Task-10"))
+                    insertTask(Task("Wash the dishes"))
+                    insertTask(Task("Do the laundry"))
+                    insertTask(Task("Buy groceries", important = true))
+                    insertTask(Task("Prepare food", completed = true))
+                    insertTask(Task("Call mom"))
+                    insertTask(Task("Visit grandma", completed = true))
+                    insertTask(Task("Repair my bike"))
+                    insertTask(Task("Call Elon Musk"))
                 }
             }
         }

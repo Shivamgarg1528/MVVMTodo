@@ -12,9 +12,27 @@
         tools:ignore="AlwaysShowAction" />
 
     <item
-        android:id="@+id/sort"
         android:icon="@drawable/ic_sort"
-        android:title="@string/sort"
-        app:showAsAction="always" />
+        android:title="Sort"
+        app:showAsAction="always">
 
+        <menu>
+
+            <item
+                android:id="@+id/action_sort_by_name"
+                android:title="Sort by name" />
+
+            <item
+                android:id="@+id/action_sort_by_date_created"
+                android:title="Sort by date created" />
+
+        </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/hide_completed"
+        android:checkable="true"
+        android:title="@string/hide_completed"
+        app:showAsAction="never" />
 </menu>

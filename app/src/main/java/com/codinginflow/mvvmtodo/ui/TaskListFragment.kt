@@ -3,20 +3,25 @@ package com.codinginflow.mvvmtodo.ui
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.codinginflow.mvvmtodo.R
+import com.codinginflow.mvvmtodo.data.SORT
+import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.data.adapter.TaskAdapter
 import com.codinginflow.mvvmtodo.databinding.FragmentTaskListBinding
 import com.codinginflow.mvvmtodo.util.onQueryTextChanged
 import com.codinginflow.mvvmtodo.vm.TaskListViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
-class TaskListFragment : Fragment(R.layout.fragment_task_list) {
+class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnItemClickListener {
 
     private var _binding: FragmentTaskListBinding? = null
     private val mBinding: FragmentTaskListBinding
@@ -27,7 +32,7 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list) {
             return _binding!!
         }
 
-    private val mAdapter: TaskAdapter by lazy { TaskAdapter() }
+    private val mAdapter: TaskAdapter by lazy { TaskAdapter(this) }
     private val mTaskListViewModel: TaskListViewModel by viewModels()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -56,10 +61,42 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list) {
         searchView.onQueryTextChanged {
             mTaskListViewModel.mQueryAsFlow.value = it
         }
+
+        lifecycleScope.launchWhenStarted {
+            menu.findItem(R.id.hide_completed).isChecked =
+                    mTaskListViewModel.preferencesFlow.first().hideCompleted
+        }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.action_sort_by_date_created -> {
+                mTaskListViewModel.onSortOrderSelected(SORT.BY_DATE)
+                return true
+            }
+            R.id.action_sort_by_name -> {
+                mTaskListViewModel.onSortOrderSelected(SORT.BY_NAME)
+                return true
+            }
+            R.id.hide_completed -> {
+                item.isChecked = !item.isChecked
+                mTaskListViewModel.onHideCompletedSelected(item.isChecked)
+                return true
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun onItemClick(task: Task) {
+        mTaskListViewModel.onItemClick(task)
+    }
+
+    override fun onCheckBoxClick(task: Task, isChecked: Boolean) {
+        mTaskListViewModel.onCheckBoxClick(task, isChecked)
     }
 }
