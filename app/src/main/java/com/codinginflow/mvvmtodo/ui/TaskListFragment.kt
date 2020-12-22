@@ -7,8 +7,10 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +19,7 @@ import com.codinginflow.mvvmtodo.data.SORT
 import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.data.adapter.TaskAdapter
 import com.codinginflow.mvvmtodo.databinding.FragmentTaskListBinding
+import com.codinginflow.mvvmtodo.util.exhaustive
 import com.codinginflow.mvvmtodo.util.onQueryTextChanged
 import com.codinginflow.mvvmtodo.vm.TaskListViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -66,6 +69,10 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
                 }
 
             }).attachToRecyclerView(recyclerView)
+
+            fabAddTask.setOnClickListener {
+                mTaskListViewModel.addTaskButtonClicked()
+            }
         }
 
         //1-
@@ -74,10 +81,10 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
         }
 
         //2- attaching task-events
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+        viewLifecycleOwner.lifecycleScope.launchWhenResumed {
             mTaskListViewModel.mTaskEventsFlow.collectLatest { event ->
                 when (event) {
-                    is TaskListViewModel.TaskEvents.OnTaskDeletedEvent -> {
+                    is TaskListViewModel.TasksEvent.OnTaskDeletedEvent -> {
                         Snackbar
                             .make(requireView(), "Task Deleted", Snackbar.LENGTH_LONG)
                             .setAction("UNDO") {
@@ -85,8 +92,31 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
                             }
                             .show()
                     }
-                }
+                    is TaskListViewModel.TasksEvent.NavigateToEditTaskScreen -> {
+                        val editTaskAction =
+                            TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2(
+                                event.task
+                            )
+                        findNavController().navigate(editTaskAction)
+                    }
+                    TaskListViewModel.TasksEvent.NavigateToAddTaskScreen -> {
+                        val addTaskAction =
+                            TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2()
+                        findNavController().navigate(addTaskAction)
+                    }
+                    is TaskListViewModel.TasksEvent.ShowTaskSavedConfirmationMessage -> {
+                        Snackbar
+                            .make(requireView(), event.msg, Snackbar.LENGTH_LONG)
+                            .show()
+                    }
+                }.exhaustive
             }
+        }
+
+        //3- fetch result
+        setFragmentResultListener("add_edit_request") { _: String, bundle: Bundle ->
+            val result = bundle.getInt("add_edit_result")
+            mTaskListViewModel.onAddEditResult(result)
         }
 
         setHasOptionsMenu(true)

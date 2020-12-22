@@ -7,6 +7,8 @@ import com.codinginflow.mvvmtodo.data.PreferencesManager
 import com.codinginflow.mvvmtodo.data.SORT
 import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.data.TaskDao
+import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.ADD_TASK_RESULT_OK
+import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.EDIT_TASK_RESULT_OK
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -23,7 +25,7 @@ class TaskListViewModel @ViewModelInject constructor(
     private val mQueryAsFlow = MutableStateFlow("")
     val preferencesFlow = preferencesManager.preferencesFlow
 
-    private val _taskEventChannel = Channel<TaskEvents>()
+    private val _taskEventChannel = Channel<TasksEvent>()
     val mTaskEventsFlow = _taskEventChannel.receiveAsFlow()
 
     private val mTaskStateFlow = combine(mQueryAsFlow, preferencesFlow) { query, preferencesFlow ->
@@ -50,13 +52,13 @@ class TaskListViewModel @ViewModelInject constructor(
         taskDao.updateTask(task.copy(completed = completed))
     }
 
-    fun onItemClick(task: Task) {
-
+    fun onItemClick(task: Task) = viewModelScope.launch {
+        _taskEventChannel.send(TasksEvent.NavigateToEditTaskScreen(task))
     }
 
     fun onTaskSwiped(task: Task) = viewModelScope.launch {
         taskDao.deleteTask(task)
-        _taskEventChannel.send(TaskEvents.OnTaskDeletedEvent(task))
+        _taskEventChannel.send(TasksEvent.OnTaskDeletedEvent(task))
     }
 
     fun onUndoDeleteClick(task: Task) = viewModelScope.launch {
@@ -65,8 +67,25 @@ class TaskListViewModel @ViewModelInject constructor(
 
     fun onQueryTextChanged(query: String) = query.also { mQueryAsFlow.value = it }
 
-    sealed class TaskEvents {
-        data class OnTaskDeletedEvent(val task: Task) : TaskEvents()
+    fun addTaskButtonClicked() = viewModelScope.launch {
+        _taskEventChannel.send(TasksEvent.NavigateToAddTaskScreen)
     }
 
+    fun onAddEditResult(result: Int) = viewModelScope.launch {
+        when (result) {
+            ADD_TASK_RESULT_OK -> _taskEventChannel.send(
+                TasksEvent.ShowTaskSavedConfirmationMessage("Task added")
+            )
+            EDIT_TASK_RESULT_OK -> _taskEventChannel.send(
+                TasksEvent.ShowTaskSavedConfirmationMessage("Task updated")
+            )
+        }
+    }
+
+    sealed class TasksEvent {
+        object NavigateToAddTaskScreen : TasksEvent()
+        data class NavigateToEditTaskScreen(val task: Task) : TasksEvent()
+        data class OnTaskDeletedEvent(val task: Task) : TasksEvent()
+        data class ShowTaskSavedConfirmationMessage(val msg: String) : TasksEvent()
+    }
 }
