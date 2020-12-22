@@ -8,7 +8,7 @@
     <fragment
         android:id="@+id/taskListFragment"
         android:name="com.codinginflow.mvvmtodo.ui.TaskListFragment"
-        android:label="fragment_task_list"
+        android:label="Tasks"
         tools:layout="@layout/fragment_task_list">
         <action
             android:id="@+id/action_taskListFragment_to_addEditTaskFragment2"
@@ -17,13 +17,16 @@
     <fragment
         android:id="@+id/addEditTaskFragment2"
         android:name="com.codinginflow.mvvmtodo.ui.AddEditTaskFragment"
-        android:label="add_edit_task_fragment"
+        android:label="{title}"
         tools:layout="@layout/add_edit_task_fragment">
         <argument
             android:name="task"
             android:defaultValue="@null"
             app:argType="com.codinginflow.mvvmtodo.data.Task"
             app:nullable="true" />
+        <argument
+            android:name="title"
+            app:argType="string" />
     </fragment>
     <dialog
         android:id="@+id/confirmDeleteFragment"
