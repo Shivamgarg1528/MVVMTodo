@@ -109,6 +109,10 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
                             .make(requireView(), event.msg, Snackbar.LENGTH_LONG)
                             .show()
                     }
+                    TaskListViewModel.TasksEvent.NavigateToDeleteAllComplete -> {
+                        val action = TaskListFragmentDirections.actionGlobalConfirmDeleteFragment()
+                        findNavController().navigate(action)
+                    }
                 }.exhaustive
             }
         }
@@ -150,6 +154,10 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
             R.id.hide_completed -> {
                 item.isChecked = !item.isChecked
                 mTaskListViewModel.onHideCompletedSelected(item.isChecked)
+                return true
+            }
+            R.id.delete_all_completed_task -> {
+                mTaskListViewModel.onDeleteAllCompletedClick()
                 return true
             }
         }

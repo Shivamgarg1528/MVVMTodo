@@ -35,4 +35,9 @@
         android:checkable="true"
         android:title="@string/hide_completed"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/delete_all_completed_task"
+        android:title="@string/delete_completed"
+        app:showAsAction="never" />
 </menu>

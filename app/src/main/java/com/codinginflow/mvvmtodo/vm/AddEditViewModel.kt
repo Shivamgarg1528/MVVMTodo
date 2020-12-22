@@ -7,18 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.data.TaskDao
-import com.codinginflow.mvvmtodo.di.ApplicationCoroutine
 import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.ADD_TASK_RESULT_OK
 import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.EDIT_TASK_RESULT_OK
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class AddEditViewModel @ViewModelInject constructor(
     private val taskDao: TaskDao,
-    @Assisted private val savedStateHandle: SavedStateHandle,
-    @ApplicationCoroutine private val appScope: CoroutineScope
+    @Assisted private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _addEditTaskEventChannel = Channel<AddEditTaskEvents>()
