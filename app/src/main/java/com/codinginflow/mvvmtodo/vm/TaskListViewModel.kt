@@ -7,19 +7,24 @@ import com.codinginflow.mvvmtodo.data.PreferencesManager
 import com.codinginflow.mvvmtodo.data.SORT
 import com.codinginflow.mvvmtodo.data.Task
 import com.codinginflow.mvvmtodo.data.TaskDao
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class TaskListViewModel @ViewModelInject constructor(
-        private val taskDao: TaskDao,
-        @Assisted private val savedStateHandle: SavedStateHandle,
-        private val preferencesManager: PreferencesManager
+    private val taskDao: TaskDao,
+    @Assisted private val savedStateHandle: SavedStateHandle,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
-    var mQueryAsFlow = MutableStateFlow("")
+    private val mQueryAsFlow = MutableStateFlow("")
     val preferencesFlow = preferencesManager.preferencesFlow
+
+    private val _taskEventChannel = Channel<TaskEvents>()
+    val mTaskEventsFlow = _taskEventChannel.receiveAsFlow()
 
     private val mTaskStateFlow = combine(mQueryAsFlow, preferencesFlow) { query, preferencesFlow ->
         Pair(query, preferencesFlow)
@@ -27,7 +32,7 @@ class TaskListViewModel @ViewModelInject constructor(
         taskDao.getTasks(query, filterPreferences.sortOrder, filterPreferences.hideCompleted)
     }
 
-    val mTask: LiveData<List<Task>> = mTaskStateFlow.asLiveData()
+    val mTasks: LiveData<List<Task>> = mTaskStateFlow.asLiveData()
 
     fun addTask(task: Task) = viewModelScope.launch {
         taskDao.insertTask(task)
@@ -48,4 +53,20 @@ class TaskListViewModel @ViewModelInject constructor(
     fun onItemClick(task: Task) {
 
     }
+
+    fun onTaskSwiped(task: Task) = viewModelScope.launch {
+        taskDao.deleteTask(task)
+        _taskEventChannel.send(TaskEvents.OnTaskDeletedEvent(task))
+    }
+
+    fun onUndoDeleteClick(task: Task) = viewModelScope.launch {
+        taskDao.insertTask(task)
+    }
+
+    fun onQueryTextChanged(query: String) = query.also { mQueryAsFlow.value = it }
+
+    sealed class TaskEvents {
+        data class OnTaskDeletedEvent(val task: Task) : TaskEvents()
+    }
+
 }
