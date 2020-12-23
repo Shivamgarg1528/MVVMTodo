@@ -39,6 +39,7 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
             return _binding!!
         }
 
+    private lateinit var mSearchView: SearchView
     private val mAdapter: TaskAdapter by lazy { TaskAdapter(this) }
     private val mTaskListViewModel: TaskListViewModel by viewModels()
 
@@ -52,13 +53,13 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
             recyclerView.adapter = mAdapter
 
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-                0,
-                ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+                    0,
+                    ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
             ) {
                 override fun onMove(
-                    recyclerView: RecyclerView,
-                    viewHolder: RecyclerView.ViewHolder,
-                    target: RecyclerView.ViewHolder
+                        recyclerView: RecyclerView,
+                        viewHolder: RecyclerView.ViewHolder,
+                        target: RecyclerView.ViewHolder
                 ): Boolean {
                     return false
                 }
@@ -86,31 +87,31 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
                 when (event) {
                     is TaskListViewModel.TasksEvent.OnTaskDeletedEvent -> {
                         Snackbar
-                            .make(requireView(), "Task Deleted", Snackbar.LENGTH_LONG)
-                            .setAction("UNDO") {
-                                mTaskListViewModel.onUndoDeleteClick(event.task)
-                            }
-                            .show()
+                                .make(requireView(), "Task Deleted", Snackbar.LENGTH_LONG)
+                                .setAction("UNDO") {
+                                    mTaskListViewModel.onUndoDeleteClick(event.task)
+                                }
+                                .show()
                     }
                     is TaskListViewModel.TasksEvent.NavigateToEditTaskScreen -> {
                         val editTaskAction =
-                            TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2(
-                                event.task,
-                                "Edit (${event.task.name.take(50)})"
-                            )
+                                TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2(
+                                        event.task,
+                                        "Edit (${event.task.name.take(50)})"
+                                )
                         findNavController().navigate(editTaskAction)
                     }
                     TaskListViewModel.TasksEvent.NavigateToAddTaskScreen -> {
                         val addTaskAction =
-                            TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2(
-                                title = "Add Task"
-                            )
+                                TaskListFragmentDirections.actionTaskListFragmentToAddEditTaskFragment2(
+                                        title = "Add Task"
+                                )
                         findNavController().navigate(addTaskAction)
                     }
                     is TaskListViewModel.TasksEvent.ShowTaskSavedConfirmationMessage -> {
                         Snackbar
-                            .make(requireView(), event.msg, Snackbar.LENGTH_LONG)
-                            .show()
+                                .make(requireView(), event.msg, Snackbar.LENGTH_LONG)
+                                .show()
                     }
                     TaskListViewModel.TasksEvent.NavigateToDeleteAllComplete -> {
                         val action = TaskListFragmentDirections.actionGlobalConfirmDeleteFragment()
@@ -133,14 +134,19 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.task_list_menu, menu)
 
-        val searchView = menu.findItem(R.id.search).actionView as SearchView
-        searchView.onQueryTextChanged {
+        mSearchView = menu.findItem(R.id.search).actionView as SearchView
+        val searchQuery = mTaskListViewModel.mQueryAsLiveData.value
+        if (searchQuery.isNullOrBlank().not()) {
+            mSearchView.onActionViewExpanded()
+            mSearchView.setQuery(searchQuery, false)
+        }
+        mSearchView.onQueryTextChanged {
             mTaskListViewModel.onQueryTextChanged(it)
         }
 
         lifecycleScope.launchWhenStarted {
             menu.findItem(R.id.hide_completed).isChecked =
-                mTaskListViewModel.preferencesFlow.first().hideCompleted
+                    mTaskListViewModel.preferencesFlow.first().hideCompleted
         }
     }
 
@@ -169,6 +175,9 @@ class TaskListFragment : Fragment(R.layout.fragment_task_list), TaskAdapter.OnIt
 
     override fun onDestroyView() {
         super.onDestroyView()
+        if (::mSearchView.isInitialized) {
+            mSearchView.setOnQueryTextListener(null)
+        }
         _binding = null
     }
 

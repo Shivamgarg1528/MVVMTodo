@@ -10,35 +10,30 @@ import com.codinginflow.mvvmtodo.data.TaskDao
 import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.ADD_TASK_RESULT_OK
 import com.codinginflow.mvvmtodo.ui.MainActivity.Companion.EDIT_TASK_RESULT_OK
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class TaskListViewModel @ViewModelInject constructor(
-    private val taskDao: TaskDao,
-    @Assisted private val savedStateHandle: SavedStateHandle,
-    private val preferencesManager: PreferencesManager
+        private val taskDao: TaskDao,
+        @Assisted private val savedStateHandle: SavedStateHandle,
+        private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
-    private val mQueryAsFlow = MutableStateFlow("")
+    val mQueryAsLiveData = savedStateHandle.getLiveData("query", "")
     val preferencesFlow = preferencesManager.preferencesFlow
 
     private val _taskEventChannel = Channel<TasksEvent>()
     val mTaskEventsFlow = _taskEventChannel.receiveAsFlow()
 
-    private val mTaskStateFlow = combine(mQueryAsFlow, preferencesFlow) { query, preferencesFlow ->
+    private val mTaskStateFlow = combine(mQueryAsLiveData.asFlow(), preferencesFlow) { query, preferencesFlow ->
         Pair(query, preferencesFlow)
     }.flatMapLatest { (query, filterPreferences) ->
         taskDao.getTasks(query, filterPreferences.sortOrder, filterPreferences.hideCompleted)
     }
 
     val mTasks: LiveData<List<Task>> = mTaskStateFlow.asLiveData()
-
-    fun addTask(task: Task) = viewModelScope.launch {
-        taskDao.insertTask(task)
-    }
 
     fun onSortOrderSelected(sort: SORT) = viewModelScope.launch {
         preferencesManager.updateSortOrder(sort)
@@ -65,7 +60,7 @@ class TaskListViewModel @ViewModelInject constructor(
         taskDao.insertTask(task)
     }
 
-    fun onQueryTextChanged(query: String) = query.also { mQueryAsFlow.value = it }
+    fun onQueryTextChanged(query: String) = query.also { mQueryAsLiveData.value = it }
 
     fun addTaskButtonClicked() = viewModelScope.launch {
         _taskEventChannel.send(TasksEvent.NavigateToAddTaskScreen)
@@ -74,10 +69,10 @@ class TaskListViewModel @ViewModelInject constructor(
     fun onAddEditResult(result: Int) = viewModelScope.launch {
         when (result) {
             ADD_TASK_RESULT_OK -> _taskEventChannel.send(
-                TasksEvent.ShowTaskSavedConfirmationMessage("Task added")
+                    TasksEvent.ShowTaskSavedConfirmationMessage("Task added")
             )
             EDIT_TASK_RESULT_OK -> _taskEventChannel.send(
-                TasksEvent.ShowTaskSavedConfirmationMessage("Task updated")
+                    TasksEvent.ShowTaskSavedConfirmationMessage("Task updated")
             )
         }
     }
